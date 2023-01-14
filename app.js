@@ -1,8 +1,11 @@
 //jshint esversion:6
+import * as dotenv from 'dotenv'
+dotenv.config();
 import express from "express";
 import bodyParser from "body-parser";
 import ejs from "ejs";
 import mongoose from "mongoose";
+import encrypt from "mongoose-encryption";
 
 const app = express();
 
@@ -16,10 +19,14 @@ app.use(
 
 mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
   email: String,
   password: String,
-};
+});
+
+const secret = process.env.SECRET;
+
+userSchema.plugin(encrypt, { secret : secret, encryptedFields: ["password"] });
 
 const User = new mongoose.model("User", userSchema);
 
@@ -50,22 +57,22 @@ app.post("/register", (req, res) => {
   });
 });
 
-app.post("/login", (req,res)=>{
-    const username = req.body.username;
-    const password = req.body.password;
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  const password = req.body.password;
 
-    User.findOne({email: username}, (err,foundUser) => {
-        if(err){
-            console.log(err)
-        } else {
-            if (foundUser){
-                if (foundUser.password === password){
-                    res.render("secrets");
-                }
-            }
+  User.findOne({ email: username }, (err, foundUser) => {
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUser) {
+        if (foundUser.password === password) {
+          res.render("secrets");
         }
-    })
-})
+      }
+    }
+  });
+});
 
 app.listen(3000, () => {
   console.log("Server Running on Port 3000");
